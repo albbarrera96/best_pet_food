@@ -151,7 +151,7 @@ define(["N/scriptTypes/restlet", "N/search", "N/log", "N/record", "N/format"], f
                                 finalCustomerId = newCustomer.save();
                                 log.audit('New Customer created', `ID: ${finalCustomerId}`);
                         } else {
-                                // Verificar que el Customer realmente exista
+                                // Check existing customer
                                 try {
                                         record.load({
                                                 type: record.Type.CUSTOMER,
