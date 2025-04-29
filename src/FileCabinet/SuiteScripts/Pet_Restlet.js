@@ -89,56 +89,61 @@ define(["N/scriptTypes/restlet", "N/search", "N/log", "N/record", "N/format"], f
         const post = (data) => {
                 log.debug('POST Request Received', JSON.stringify(data));
 
-                const pet_name = data.name;
-                const pet_type = data.type;
-                const breed_id = data.breed;
-                const weight = data.weight;
-                const pet_customer_first_name = data.customer_first_name;
-                const pet_customer_last_name = data.customer_last_name;
-                const pet_customer_email = data.customer_email;
-                const subsidiary_id = data.subsidiary_id;
+                const pet_name = data.pet.name;
+                const pet_type = data.pet.type;
+                const breed_id = data.pet.breed;
+                const weight = data.pet.weight;
+                const pet_customer_id = data.customer.id;
+                const pet_customer_first_name = data.customer.first_name;
+                const pet_customer_last_name = data.customer.last_name;
+                const pet_customer_email = data.customer.email;
+                const subsidiary_id = data.customer.subsidiary;
                 let pet_birth_date;
                 let pet_anniversary_date;
                 const WELCOME_BOX = 914;
 
                 try {
                         pet_birth_date = format.parse({
-                                value: data.birth_date,
+                                value: data.pet.birth_date,
                                 type: format.Type.DATE
                         });
                         pet_anniversary_date = format.parse({
-                                value: data.anniversary_date,
+                                value: data.pet.anniversary_date,
                                 type: format.Type.DATE
-                        })
+                        });
                 } catch (e) {
-                        log.error('Error Parsing Birth Date', e);
+                        log.error('Error Parsing Dates', e);
                         return restlet.createResponse({
                                 content: JSON.stringify({
                                         success: false,
-                                        message: `Invalid birth_date format: ${data.birth_date}, or anniversary_date: ${data.anniversary_date}`
+                                        message: `Invalid birth_date: ${data.pet.birth_date}, or anniversary_date: ${data.pet.anniversary_date}`
                                 }),
                                 contentType: "application/json",
                         });
                 }
 
-
                 try {
-                        // 1. CREATE CUSTOMER
-                        const newCustomer = record.create({
-                                type: record.Type.CUSTOMER,
-                                isDynamic: true
-                        });
+                        let finalCustomerId;
 
-                        newCustomer.setValue({ fieldId: 'firstname', value: pet_customer_first_name });
-                        newCustomer.setValue({ fieldId: 'lastname', value: pet_customer_last_name });
-                        newCustomer.setValue({ fieldId: 'email', value: pet_customer_email });
-                        newCustomer.setValue({ fieldId: 'isperson', value: "T" });
-                        newCustomer.setValue({ fieldId: 'subsidiary', value: subsidiary_id });
+                        if (pet_customer_id) {
+                                // Check if customer exists by ID
+                                try {
+                                        const customerRecord = record.load({
+                                                type: record.Type.CUSTOMER,
+                                                id: pet_customer_id
+                                        });
+                                        finalCustomerId = customerRecord.id;
+                                        log.audit('Existing Customer Found', `ID: ${finalCustomerId}`);
+                                } catch (e) {
+                                        log.audit('Customer ID not found, creating a new customer', pet_customer_id);
+                                        finalCustomerId = createCustomer();
+                                }
+                        } else {
+                                // No customer ID provided, create a new customer
+                                finalCustomerId = createCustomer();
+                        }
 
-                        const finalCustomerId = newCustomer.save();
-                        log.audit('New Customer created', `ID: ${finalCustomerId}`);
-
-                        // 2. CREATE PET
+                        // Create pet
                         const petRecord = record.create({
                                 type: pet_record_type,
                                 isDynamic: false
@@ -155,7 +160,7 @@ define(["N/scriptTypes/restlet", "N/search", "N/log", "N/record", "N/format"], f
                         const finalPetId = petRecord.save();
                         log.audit('New Pet Created', `Pet ID: ${finalPetId}`);
 
-                        // 3. Create initial Sales Order with Welcome Box
+                        // Create initial Sales Order with Welcome Box
                         const salesOrder = record.create({
                                 type: record.Type.SALES_ORDER,
                                 isDynamic: true
@@ -192,7 +197,7 @@ define(["N/scriptTypes/restlet", "N/search", "N/log", "N/record", "N/format"], f
                         const salesOrderId = salesOrder.save();
                         log.audit('Sales Order Created', `Sales Order ID: ${salesOrderId}`);
 
-                        // --- Final response
+                        // Final response
                         return restlet.createResponse({
                                 content: JSON.stringify({
                                         success: true,
@@ -212,6 +217,23 @@ define(["N/scriptTypes/restlet", "N/search", "N/log", "N/record", "N/format"], f
                                 }),
                                 contentType: "application/json",
                         });
+                }
+
+                function createCustomer() {
+                        const newCustomer = record.create({
+                                type: record.Type.CUSTOMER,
+                                isDynamic: true
+                        });
+
+                        newCustomer.setValue({ fieldId: 'firstname', value: pet_customer_first_name });
+                        newCustomer.setValue({ fieldId: 'lastname', value: pet_customer_last_name });
+                        newCustomer.setValue({ fieldId: 'email', value: pet_customer_email });
+                        newCustomer.setValue({ fieldId: 'isperson', value: "T" });
+                        newCustomer.setValue({ fieldId: 'subsidiary', value: subsidiary_id });
+
+                        const customerId = newCustomer.save();
+                        log.audit('New Customer Created', `ID: ${customerId}`);
+                        return customerId;
                 }
         };
 
