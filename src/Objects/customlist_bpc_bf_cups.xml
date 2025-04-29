@@ -1,0 +1,24 @@
+<customlist scriptid="customlist_bpc_bf_cups">
+  <description></description>
+  <isinactive>F</isinactive>
+  <ismatrixoption>F</ismatrixoption>
+  <isordered>T</isordered>
+  <name>Cups</name>
+  <customvalues>
+    <customvalue scriptid="val_109932_td2986753_557">
+      <abbreviation>5</abbreviation>
+      <isinactive>F</isinactive>
+      <value>5</value>
+    </customvalue>
+    <customvalue scriptid="val_109933_td2986753_612">
+      <abbreviation>1</abbreviation>
+      <isinactive>F</isinactive>
+      <value>10</value>
+    </customvalue>
+    <customvalue scriptid="val_109934_td2986753_216">
+      <abbreviation>2</abbreviation>
+      <isinactive>F</isinactive>
+      <value>20</value>
+    </customvalue>
+  </customvalues>
+</customlist>
