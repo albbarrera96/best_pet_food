@@ -21,7 +21,6 @@ define(["N/scriptTypes/restlet", "N/search", "N/log", "N/record", "N/format"], f
         const customer_last_name_field = 'lastname';
         const customer_email_field = 'email';
 
-
         const get = (requestData) => {
                 try {
                         const pet_id = requestData.pet_id;
@@ -66,7 +65,7 @@ define(["N/scriptTypes/restlet", "N/search", "N/log", "N/record", "N/format"], f
                                 },
                                 birth_date: pet_record.getText({ fieldId: pet_birth_date_field }),
                                 weight: pet_record.getValue({ fieldId: pet_weight_field }),
-                                anniversary: pet_record.getText({ fieldId: pet_anniversary_field }),
+                                anniversary_date: pet_record.getText({ fieldId: pet_anniversary_field }),
 
                                 customer_id: customer_id
                         };
@@ -90,8 +89,6 @@ define(["N/scriptTypes/restlet", "N/search", "N/log", "N/record", "N/format"], f
         const post = (data) => {
                 log.debug('POST Request Received', JSON.stringify(data));
 
-                const customer_id = data.customer_id || null;
-                const pet_id = data.id || null;
                 const pet_name = data.name;
                 const pet_type = data.type;
                 const breed_id = data.breed;
@@ -101,6 +98,7 @@ define(["N/scriptTypes/restlet", "N/search", "N/log", "N/record", "N/format"], f
                 const pet_customer_email = data.customer_email;
                 const subsidiary_id = data.subsidiary_id;
                 let pet_birth_date;
+                let pet_anniversary_date;
                 const WELCOME_BOX = 914;
 
                 try {
@@ -108,99 +106,54 @@ define(["N/scriptTypes/restlet", "N/search", "N/log", "N/record", "N/format"], f
                                 value: data.birth_date,
                                 type: format.Type.DATE
                         });
+                        pet_anniversary_date = format.parse({
+                                value: data.anniversary_date,
+                                type: format.Type.DATE
+                        })
                 } catch (e) {
                         log.error('Error Parsing Birth Date', e);
                         return restlet.createResponse({
                                 content: JSON.stringify({
                                         success: false,
-                                        message: `Invalid birth_date format: ${data.birth_date}`
+                                        message: `Invalid birth_date format: ${data.birth_date}, or anniversary_date: ${data.anniversary_date}`
                                 }),
                                 contentType: "application/json",
                         });
                 }
 
+
                 try {
-                        let finalCustomerId = customer_id;
-                        let finalPetId = pet_id;
-                        let CASE = '';
-
-                        // --- Detect CASE ---
-                        if (!customer_id) {
-                                CASE = 'CREATE_CUSTOMER';
-                        } else if (!pet_id) {
-                                CASE = 'CREATE_PET';
-                        } else {
-                                CASE = 'UPDATE_PET';
-                        }
-
-                        log.debug('Detected CASE', CASE);
-
                         // 1. CREATE CUSTOMER
-                        if (CASE === 'CREATE_CUSTOMER') {
-                                const newCustomer = record.create({
-                                        type: record.Type.CUSTOMER,
-                                        isDynamic: true
-                                });
+                        const newCustomer = record.create({
+                                type: record.Type.CUSTOMER,
+                                isDynamic: true
+                        });
 
-                                newCustomer.setValue({ fieldId: 'firstname', value: pet_customer_first_name });
-                                newCustomer.setValue({ fieldId: 'lastname', value: pet_customer_last_name });
-                                newCustomer.setValue({ fieldId: 'email', value: pet_customer_email });
-                                newCustomer.setValue({ fieldId: 'isperson', value: "T" });
-                                newCustomer.setValue({ fieldId: 'subsidiary', value: subsidiary_id });
+                        newCustomer.setValue({ fieldId: 'firstname', value: pet_customer_first_name });
+                        newCustomer.setValue({ fieldId: 'lastname', value: pet_customer_last_name });
+                        newCustomer.setValue({ fieldId: 'email', value: pet_customer_email });
+                        newCustomer.setValue({ fieldId: 'isperson', value: "T" });
+                        newCustomer.setValue({ fieldId: 'subsidiary', value: subsidiary_id });
 
-                                finalCustomerId = newCustomer.save();
-                                log.audit('New Customer created', `ID: ${finalCustomerId}`);
-                        } else {
-                                // Check existing customer
-                                try {
-                                        record.load({
-                                                type: record.Type.CUSTOMER,
-                                                id: Number(customer_id)
-                                        });
-                                } catch (e) {
-                                        return restlet.createResponse({
-                                                content: JSON.stringify({
-                                                        success: false,
-                                                        message: `Provided Customer ID ${customer_id} does not exist`
-                                                }),
-                                                contentType: "application/json",
-                                        });
-                                }
-                        }
+                        const finalCustomerId = newCustomer.save();
+                        log.audit('New Customer created', `ID: ${finalCustomerId}`);
 
-                        // 2. CREATE or UPDATE PET
-                        if (CASE === 'UPDATE_PET') {
-                                const petRecord = record.load({
-                                        type: pet_record_type,
-                                        id: finalPetId,
-                                        isDynamic: false
-                                });
+                        // 2. CREATE PET
+                        const petRecord = record.create({
+                                type: pet_record_type,
+                                isDynamic: false
+                        });
 
-                                petRecord.setValue({ fieldId: pet_type_field, value: pet_type });
-                                petRecord.setValue({ fieldId: pet_breed_field, value: breed_id });
-                                petRecord.setValue({ fieldId: pet_name_field, value: pet_name });
-                                petRecord.setValue({ fieldId: pet_birth_date_field, value: pet_birth_date });
-                                petRecord.setValue({ fieldId: pet_weight_field, value: weight });
+                        petRecord.setValue({ fieldId: pet_name_field, value: pet_name });
+                        petRecord.setValue({ fieldId: pet_customer_field, value: finalCustomerId });
+                        petRecord.setValue({ fieldId: pet_type_field, value: pet_type });
+                        petRecord.setValue({ fieldId: pet_breed_field, value: breed_id });
+                        petRecord.setValue({ fieldId: pet_birth_date_field, value: pet_birth_date });
+                        petRecord.setValue({ fieldId: pet_weight_field, value: weight });
+                        petRecord.setValue({ fieldId: pet_anniversary_field, value: pet_anniversary_date });
 
-                                finalPetId = petRecord.save();
-                                log.audit('Pet Updated', `Pet ID: ${finalPetId}`);
-
-                        } else {
-                                const petRecord = record.create({
-                                        type: pet_record_type,
-                                        isDynamic: false
-                                });
-
-                                petRecord.setValue({ fieldId: pet_name_field, value: pet_name });
-                                petRecord.setValue({ fieldId: pet_customer_field, value: finalCustomerId });
-                                petRecord.setValue({ fieldId: pet_type_field, value: pet_type });
-                                petRecord.setValue({ fieldId: pet_breed_field, value: breed_id });
-                                petRecord.setValue({ fieldId: pet_birth_date_field, value: pet_birth_date });
-                                petRecord.setValue({ fieldId: pet_weight_field, value: weight });
-
-                                finalPetId = petRecord.save();
-                                log.audit('New Pet Created', `Pet ID: ${finalPetId}`);
-                        }
+                        const finalPetId = petRecord.save();
+                        log.audit('New Pet Created', `Pet ID: ${finalPetId}`);
 
                         // 3. Create initial Sales Order with Welcome Box
                         const salesOrder = record.create({
@@ -243,7 +196,6 @@ define(["N/scriptTypes/restlet", "N/search", "N/log", "N/record", "N/format"], f
                         return restlet.createResponse({
                                 content: JSON.stringify({
                                         success: true,
-                                        case_detected: CASE,
                                         pet_id: finalPetId,
                                         customer_id: finalCustomerId,
                                         sales_order_id: salesOrderId
@@ -263,8 +215,88 @@ define(["N/scriptTypes/restlet", "N/search", "N/log", "N/record", "N/format"], f
                 }
         };
 
+        const put = (data) => {
+                log.debug('PUT Request Received', JSON.stringify(data));
+
+                const pet_id = data.id;
+                const pet_name = data.name;
+                const pet_type = data.type;
+                const breed_id = data.breed;
+                const weight = data.weight;
+                const anniversary_date = data.anniversary_date;
+                let pet_birth_date;
+                let pet_anniversary_date;
+
+                if (!pet_id) {
+                        return restlet.createResponse({
+                                content: JSON.stringify({
+                                        success: false,
+                                        message: 'Pet ID is required for update'
+                                }),
+                                contentType: "application/json",
+                        });
+                }
+
+                try {
+                        pet_birth_date = format.parse({
+                                value: data.birth_date,
+                                type: format.Type.DATE
+                        });
+                        pet_anniversary_date = format.parse({
+                                value: data.anniversary_date,
+                                type: format.Type.DATE
+                        });
+                } catch (e) {
+                        log.error('Error Parsing Birth Date', e);
+                        return restlet.createResponse({
+                                content: JSON.stringify({
+                                        success: false,
+                                        message: `Invalid birth_date format: ${data.birth_date} or anniversary_date: ${data.anniversary_date}`
+                                }),
+                                contentType: "application/json",
+                        });
+                }
+
+                try {
+                        const petRecord = record.load({
+                                type: pet_record_type,
+                                id: pet_id,
+                                isDynamic: false
+                        });
+
+                        petRecord.setValue({ fieldId: pet_type_field, value: pet_type });
+                        petRecord.setValue({ fieldId: pet_breed_field, value: breed_id });
+                        petRecord.setValue({ fieldId: pet_name_field, value: pet_name });
+                        petRecord.setValue({ fieldId: pet_birth_date_field, value: pet_birth_date });
+                        petRecord.setValue({ fieldId: pet_weight_field, value: weight });
+                        petRecord.setValue({ fieldId: pet_anniversary_field, value: pet_anniversary_date });
+
+                        const updatedPetId = petRecord.save();
+                        log.audit('Pet Updated', `Pet ID: ${updatedPetId}`);
+
+                        return restlet.createResponse({
+                                content: JSON.stringify({
+                                        success: true,
+                                        pet_id: updatedPetId
+                                }),
+                                contentType: "application/json"
+                        });
+
+                } catch (e) {
+                        log.error('Error in PUT process', e);
+                        return restlet.createResponse({
+                                content: JSON.stringify({
+                                        success: false,
+                                        message: `Error: ${e.message}`
+                                }),
+                                contentType: "application/json",
+                        });
+                }
+        };
+
         return {
                 get,
-                post
+                post,
+                put
         };
 });
