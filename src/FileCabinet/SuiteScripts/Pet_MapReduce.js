@@ -17,6 +17,7 @@ define(['N/search', 'N/record', 'N/log', 'N/format'], function(search, record, l
         const pet_status_field = 'custrecord_bpc_pet_status';
 
         const sales_order_type = record.Type.SALES_ORDER;
+        const food_item_saved_search_id = 'customsearch_bpc_ab_pet_food_search';
 
         function getInputData() {
                 // Create a search to find pets that need to be ordered
