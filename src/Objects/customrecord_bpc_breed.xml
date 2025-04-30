@@ -73,7 +73,7 @@
       <searchdefault></searchdefault>
       <searchlevel>2</searchlevel>
       <selectrecordtype>[scriptid=customrecord_bpc_pet_type]</selectrecordtype>
-      <showinlist>F</showinlist>
+      <showinlist>T</showinlist>
       <sourcefilterby></sourcefilterby>
       <sourcefrom></sourcefrom>
       <sourcelist></sourcelist>
@@ -158,6 +158,60 @@
       <sourcefrom></sourcefrom>
       <sourcelist></sourcelist>
       <storevalue>T</storevalue>
+      <subtab></subtab>
+    </customrecordcustomfield>
+    <customrecordcustomfield scriptid="custrecord_bpc_breed_size">
+      <accesslevel>2</accesslevel>
+      <allowquickadd>F</allowquickadd>
+      <applyformatting>F</applyformatting>
+      <checkspelling>F</checkspelling>
+      <defaultchecked>F</defaultchecked>
+      <defaultselection></defaultselection>
+      <defaultvalue>CASE&#xd;
+WHEN {custrecord_bpc_bf_breed_type} = &apos;Dog&apos; THEN&#xd;
+  CASE &#xd;
+    WHEN {custrecord_bpc_bf_exp_adult_weight} &lt;= 20 THEN &apos;Small&apos;&#xd;
+    WHEN {custrecord_bpc_bf_exp_adult_weight} &lt;= 50 THEN &apos;Medium&apos;&#xd;
+    ELSE &apos;Large&apos;&#xd;
+  END&#xd;
+WHEN {custrecord_bpc_bf_breed_type} = &apos;Cat&apos; THEN&#xd;
+  CASE &#xd;
+    WHEN {custrecord_bpc_bf_exp_adult_weight} &lt;= 4 THEN &apos;Small&apos;&#xd;
+    WHEN {custrecord_bpc_bf_exp_adult_weight} &lt;= 8 THEN &apos;Medium&apos;&#xd;
+    ELSE &apos;Large&apos;&#xd;
+  END&#xd;
+ELSE &apos;Unknown&apos;&#xd;
+END</defaultvalue>
+      <description>Determines if the breed is small, medium, or large</description>
+      <displayheight></displayheight>
+      <displaytype>STATICTEXT</displaytype>
+      <displaywidth></displaywidth>
+      <dynamicdefault></dynamicdefault>
+      <enabletextenhance>F</enabletextenhance>
+      <encryptatrest>F</encryptatrest>
+      <fieldtype>TEXT</fieldtype>
+      <globalsearch>F</globalsearch>
+      <help>Determines if the breed is small, medium, or large</help>
+      <isformula>T</isformula>
+      <ismandatory>F</ismandatory>
+      <isparent>F</isparent>
+      <label>Size</label>
+      <linktext></linktext>
+      <maxlength></maxlength>
+      <maxvalue></maxvalue>
+      <minvalue></minvalue>
+      <onparentdelete></onparentdelete>
+      <parentsubtab></parentsubtab>
+      <rolerestrict>F</rolerestrict>
+      <searchcomparefield></searchcomparefield>
+      <searchdefault></searchdefault>
+      <searchlevel>2</searchlevel>
+      <selectrecordtype></selectrecordtype>
+      <showinlist>T</showinlist>
+      <sourcefilterby></sourcefilterby>
+      <sourcefrom></sourcefrom>
+      <sourcelist></sourcelist>
+      <storevalue>F</storevalue>
       <subtab></subtab>
     </customrecordcustomfield>
   </customrecordcustomfields>
