@@ -14,6 +14,7 @@ define(['N/search', 'N/record', 'N/log', 'N/format'], function(search, record, l
         const pet_last_order_date_field = 'custrecord_bpc_last_order_date';
         const pet_anniversary_date_field = 'custrecord_bpc_anniversary_date';
         const pet_age_in_months_field = 'custrecord_bpc_age_in_months';
+        const pet_status_field = 'custrecord_bpc_pet_status';
 
         const sales_order_type = record.Type.SALES_ORDER;
 
@@ -32,7 +33,9 @@ define(['N/search', 'N/record', 'N/log', 'N/format'], function(search, record, l
                                 pet_name_field,
                                 pet_weight_field,
                                 pet_last_order_date_field,
-                                pet_anniversary_date_field
+                                pet_anniversary_date_field,
+                                pet_age_in_months_field,
+                                pet_status_field
                         ]
                 });
         }
@@ -86,10 +89,11 @@ define(['N/search', 'N/record', 'N/log', 'N/format'], function(search, record, l
 
                         // Update the pet record with the last order date
                         const pet_record = record.load({ type: pet_record_type, id: pet_id });
+                        let last_order_date = pet_record.getValue({ fieldId: pet_last_order_date_field });
                         pet_record.setValue({
                                 fieldId: pet_last_order_date_field,
-                                value: fomat.parse({
-                                        value: new Date(),
+                                value: format.format({
+                                        value: last_order_date,
                                         type: format.Type.DATE
                                 })
                         });

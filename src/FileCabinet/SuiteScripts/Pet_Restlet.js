@@ -245,7 +245,6 @@ define(["N/scriptTypes/restlet", "N/search", "N/log", "N/record", "N/format"], f
                 const pet_type = data.type;
                 const breed_id = data.breed;
                 const weight = data.weight;
-                const anniversary_date = data.anniversary_date;
                 let pet_birth_date;
                 let pet_anniversary_date;
 

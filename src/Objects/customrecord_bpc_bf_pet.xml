@@ -440,6 +440,46 @@
       <storevalue>F</storevalue>
       <subtab></subtab>
     </customrecordcustomfield>
+    <customrecordcustomfield scriptid="custrecord_bpc_pet_status">
+      <accesslevel>2</accesslevel>
+      <allowquickadd>F</allowquickadd>
+      <applyformatting>F</applyformatting>
+      <checkspelling>F</checkspelling>
+      <defaultchecked>F</defaultchecked>
+      <defaultselection></defaultselection>
+      <defaultvalue></defaultvalue>
+      <description>This field will show the pet’s status concerning its weight and age.</description>
+      <displayheight></displayheight>
+      <displaytype>STATICTEXT</displaytype>
+      <displaywidth></displaywidth>
+      <dynamicdefault></dynamicdefault>
+      <enabletextenhance>F</enabletextenhance>
+      <encryptatrest>F</encryptatrest>
+      <fieldtype>CLOBTEXT</fieldtype>
+      <globalsearch>F</globalsearch>
+      <help>This field will show the pet’s status concerning its weight and age.</help>
+      <isformula>F</isformula>
+      <ismandatory>F</ismandatory>
+      <isparent>F</isparent>
+      <label>Status</label>
+      <linktext></linktext>
+      <maxlength></maxlength>
+      <maxvalue></maxvalue>
+      <minvalue></minvalue>
+      <onparentdelete></onparentdelete>
+      <parentsubtab></parentsubtab>
+      <rolerestrict>F</rolerestrict>
+      <searchcomparefield></searchcomparefield>
+      <searchdefault></searchdefault>
+      <searchlevel>2</searchlevel>
+      <selectrecordtype></selectrecordtype>
+      <showinlist>F</showinlist>
+      <sourcefilterby></sourcefilterby>
+      <sourcefrom></sourcefrom>
+      <sourcelist></sourcelist>
+      <storevalue>T</storevalue>
+      <subtab></subtab>
+    </customrecordcustomfield>
   </customrecordcustomfields>
   <links>
     <link>
