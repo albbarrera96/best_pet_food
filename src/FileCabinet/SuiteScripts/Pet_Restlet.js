@@ -5,7 +5,6 @@
 define(["N/scriptTypes/restlet", "N/search", "N/log", "N/record", "N/format"], function(restlet, search, log, record, format) {
 
         const pet_record_type = 'customrecord_bpc_bf_pet';
-        const breed_record_type = 'customrecord_bpc_bf_breed';
 
         // Pet Record Fields
         const pet_name_field = 'name';
@@ -15,6 +14,7 @@ define(["N/scriptTypes/restlet", "N/search", "N/log", "N/record", "N/format"], f
         const pet_birth_date_field = 'custrecord_bpc_birth_date';
         const pet_weight_field = 'custrecord_bpc_current_weight_kg';
         const pet_anniversary_field = 'custrecord_bpc_anniversary_date';
+        const pet_status_field = 'custrecord_bpc_pet_status';
 
         // Customer Record Fields
         const customer_first_name_field = 'firstname';
@@ -66,8 +66,8 @@ define(["N/scriptTypes/restlet", "N/search", "N/log", "N/record", "N/format"], f
                                 birth_date: pet_record.getText({ fieldId: pet_birth_date_field }),
                                 weight: pet_record.getValue({ fieldId: pet_weight_field }),
                                 anniversary_date: pet_record.getText({ fieldId: pet_anniversary_field }),
+                                status: pet_record.getText({ fieldId: pet_status_field }),
 
-                                customer_id: customer_id
                         };
 
 

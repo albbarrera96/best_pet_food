@@ -2,15 +2,18 @@
  * @NApiVersion 2.1
  * @NScriptType MapReduceScript
  */
-define(['N/search', 'N/record', 'N/log'], function(search, record, log) {
+define(['N/search', 'N/record', 'N/log', 'N/format'], function(search, record, log, format) {
 
         // Record types and fields
         const pet_record_type = 'customrecord_bpc_bf_pet';
+
+        // Pet Record Fields
         const pet_customer_field = 'custrecord_bpc_bf_pet_cust';
         const pet_name_field = 'name';
-        const pet_weight_field = 'custrecord_bpc_current_weight';
+        const pet_weight_field = 'custrecord_bpc_current_weight_kg';
         const pet_last_order_date_field = 'custrecord_bpc_last_order_date';
         const pet_anniversary_date_field = 'custrecord_bpc_anniversary_date';
+        const pet_age_in_months_field = 'custrecord_bpc_age_in_months';
 
         const sales_order_type = record.Type.SALES_ORDER;
 
@@ -85,7 +88,10 @@ define(['N/search', 'N/record', 'N/log'], function(search, record, log) {
                         const pet_record = record.load({ type: pet_record_type, id: pet_id });
                         pet_record.setValue({
                                 fieldId: pet_last_order_date_field,
-                                value: new Date()
+                                value: fomat.parse({
+                                        value: new Date(),
+                                        type: format.Type.DATE
+                                })
                         });
                         pet_record.save();
 
