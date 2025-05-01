@@ -67,193 +67,32 @@ define(['N/search', 'N/record', 'N/log', 'N/format'], function(search, record, l
         }
 
         function map(context) {
-                function map(context) {
-                        const pet = JSON.parse(context.value);
-                        const pet_id = pet.id;
-                        const customer_id = pet.values[pet_customer_field]?.value;
-                        const pet_name = pet.values[pet_name_field];
-                        const pet_weight_kg = parseFloat(pet.values[pet_weight_field]) || 0;
-                        const pet_weight_lbs = pet_weight_kg * 2.20462; // Convert kg to lbs
-                        const pet_age_in_months = parseInt(pet.values[pet_age_in_months_field]) || 0;
-                        const breed_size = pet.values[pet_breed_size_field];
-                        const pet_type = pet.values[pet_type_field];
-                        const last_order_date = pet.values[pet_last_order_date_field];
-                        const anniversary_date = pet.values[pet_anniversary_date_field];
+                const pet = JSON.parse(context.value);
+                const pet_id = pet.id;
+                const customer_id = pet.values[pet_customer_field]?.value;
+                const pet_name = pet.values[pet_name_field];
+                const pet_weight_kg = parseFloat(pet.values[pet_weight_field]) || 0;
+                const pet_weight_lbs = pet_weight_kg * 2.20462;
+                const pet_age_in_months = parseInt(pet.values[pet_age_in_months_field]) || 0;
+                const breed_size = pet.values[pet_breed_size_field];
+                const pet_type = pet.values[pet_type_field];
+                const last_order_date = pet.values[pet_last_order_date_field];
+                const anniversary_date = pet.values[pet_anniversary_date_field];
 
-                        if (!customer_id || !pet_name || !pet_type) {
-                                log.error('Missing required fields', { pet_id, customer_id, pet_name, pet_type });
-                                return;
-                        }
+                log.debug('Pet Inf Detailed', {
+                        pet_id,
+                        customer_id,
+                        pet_name,
+                        pet_weight_kg,
+                        pet_weight_lbs,
+                        pet_age_in_months,
+                        breed_size,
+                        pet_type,
+                        last_order_date,
+                        anniversary_date
+                });
 
-                        try {
-                                // Determine food type and stage
-                                let food_stage;
-                                if (pet_type === 'Dog') {
-                                        if (pet_age_in_months >= 0 && pet_age_in_months <= 6) {
-                                                food_stage = 'Puppy';
-                                        } else if (pet_age_in_months >= 9 && pet_age_in_months <= 24) {
-                                                food_stage = 'Puppy';
-                                        } else if (pet_age_in_months > 24) {
-                                                food_stage = 'Adult';
-                                        }
-                                } else if (pet_type === 'Cat') {
-                                        if (pet_age_in_months >= 0 && pet_age_in_months <= 6) {
-                                                food_stage = 'Kitten';
-                                        } else if (pet_age_in_months >= 12 && pet_age_in_months <= 24) {
-                                                food_stage = 'Kitten';
-                                        } else if (pet_age_in_months > 24) {
-                                                food_stage = 'Adult';
-                                        }
-                                }
 
-                                if (!food_stage || !breed_size) {
-                                        log.error('Invalid food stage or breed size', { pet_id, food_stage, breed_size });
-                                        return;
-                                }
-
-                                // Fetch appropriate food item
-                                const food_item = getFoodItem(food_stage, breed_size);
-                                if (!food_item) {
-                                        log.error('No matching food item found', { pet_id, food_stage, breed_size });
-                                        return;
-                                }
-
-                                const food_item_id = food_item.getValue('internalid');
-                                const food_bag_size = parseInt(food_item.getValue('custitem_bpc_bf_cups')) || 0;
-
-                                // Calculate daily and monthly food requirements
-                                const daily_cups = food_stage === 'Puppy' || food_stage === 'Kitten'
-                                    ? 0.5 + (0.5 * (pet_weight_lbs / 5))
-                                    : 0.5 * (pet_weight_lbs / 5);
-                                const monthly_cups = Math.ceil(daily_cups * 30);
-                                const bags_needed = Math.ceil(monthly_cups / food_bag_size);
-
-                                // Update weight for growing pets
-                                if (pet_type === 'Dog' && pet_age_in_months < 24) {
-                                        const adult_weight = getAdultWeight(pet_id);
-                                        const updated_weight = pet_age_in_months <= 12
-                                            ? adult_weight * 0.75
-                                            : adult_weight;
-                                        updatePetWeight(pet_id, updated_weight);
-                                } else if (pet_type === 'Cat' && pet_age_in_months < 24) {
-                                        const adult_weight = getAdultWeight(pet_id);
-                                        const updated_weight = (adult_weight / 24) * pet_age_in_months;
-                                        updatePetWeight(pet_id, updated_weight);
-                                }
-
-                                // Create sales order
-                                const sales_order = record.create({
-                                        type: sales_order_type,
-                                        isDynamic: true
-                                });
-
-                                sales_order.setValue({
-                                        fieldId: 'entity',
-                                        value: customer_id
-                                });
-
-                                sales_order.setValue({
-                                        fieldId: 'memo',
-                                        value: `Auto-generated order for ${pet_name}`
-                                });
-
-                                // Add food items
-                                sales_order.selectNewLine({ sublistId: 'item' });
-                                sales_order.setCurrentSublistValue({ sublistId: 'item', fieldId: 'item', value: food_item_id });
-                                sales_order.setCurrentSublistValue({ sublistId: 'item', fieldId: 'quantity', value: bags_needed });
-                                sales_order.setCurrentSublistValue({
-                                        sublistId: 'item',
-                                        fieldId: 'description',
-                                        value: `Feeding instructions for ${pet_name}: ${daily_cups.toFixed(1)} cups/day`
-                                });
-                                sales_order.commitLine({ sublistId: 'item' });
-
-                                // Add welcome box for first-time orders
-                                if (!last_order_date) {
-                                        sales_order.selectNewLine({ sublistId: 'item' });
-                                        sales_order.setCurrentSublistValue({ sublistId: 'item', fieldId: 'item', value: WELCOME_BOX });
-                                        sales_order.setCurrentSublistValue({ sublistId: 'item', fieldId: 'quantity', value: 1 });
-                                        sales_order.setCurrentSublistValue({
-                                                sublistId: 'item',
-                                                fieldId: 'description',
-                                                value: `Welcome Box for ${pet_name}`
-                                        });
-                                        sales_order.commitLine({ sublistId: 'item' });
-                                }
-
-                                const sales_order_id = sales_order.save();
-
-                                log.audit('Sales order created successfully', {
-                                        sales_order_id,
-                                        pet_id,
-                                        customer_id
-                                });
-
-                                // Update the pet record with the last order date
-                                const pet_record = record.load({ type: pet_record_type, id: pet_id });
-                                pet_record.setValue({
-                                        fieldId: pet_last_order_date_field,
-                                        value: format.format({
-                                                value: new Date(),
-                                                type: format.Type.DATE
-                                        })
-                                });
-                                pet_record.save();
-
-                        } catch (e) {
-                                log.error('Error when creating an order or updating a pet record', { pet_id, error: e });
-                        }
-                }
-
-                function getFoodItem(food_stage, breed_size, pet_type) {
-                        const food_search = search.create({
-                                type: "inventoryitem",
-                                filters: [
-                                        ["type", "anyof", "InvtPart"],
-                                        "AND",
-                                        ["custitem_bpc_bf_stage", "is", food_stage],
-                                        "AND",
-                                        ["custitem_bpc_food_breed_size", "is", breed_size],
-                                        "AND",
-                                        ["custitem_bpc_pet_type", "is", pet_type]
-                                ],
-                                columns: [
-                                        search.createColumn({ name: "internalid" }),
-                                        search.createColumn({ name: "custitem_bpc_bf_cups" })
-                                ]
-                        });
-
-                        return food_search.run().getRange({ start: 0, end: 1 })[0];
-                }
-
-                function getAdultWeight(pet_id) {
-                        try {
-                                const pet_record = record.load({
-                                        type: pet_record_type,
-                                        id: pet_id
-                                });
-
-                                const adult_weight = pet_record.getValue({
-                                        fieldId: pet_breed_expected_weight_field
-                                });
-
-                                if (!adult_weight) {
-                                        log.error('Missing expected adult weight', { pet_id });
-                                        return null;
-                                }
-
-                                return parseFloat(adult_weight);
-                        } catch (e) {
-                                log.error('Error fetching adult weight', { pet_id, error: e });
-                                return null;
-                        }
-                }
-
-                function updatePetWeight(pet_id, weight) {
-                        const pet_record = record.load({ type: pet_record_type, id: pet_id });
-                        pet_record.setValue({ fieldId: pet_weight_field, value: weight });
-                        pet_record.save();
-                }
         }
         return {
                 getInputData,
