@@ -203,6 +203,62 @@ define(['N/search', 'N/record', 'N/log', 'N/format'], function(search, record, l
                         pet_id,
                         matchingItems
                 });
+
+                if (!matchingItems.length || !customer_id) return;
+
+                log.debug('Food Items', {
+                        pet_id,
+                        customer_id,
+                        matchingItems
+                });
+
+                const itemsByCups = {};
+                for (let item of matchingItems) {
+                        const cups = parseInt(item.cups);
+                        if (!itemsByCups[cups]) {
+                                itemsByCups[cups] = item;
+                        }
+                }
+
+                const salesOrder = record.create({
+                        type: record.Type.SALES_ORDER,
+                        isDynamic: true
+                });
+
+                salesOrder.setValue({
+                        fieldId: 'entity',
+                        value: customer_id
+                });
+
+                salesOrder.setValue({
+                        fieldId: 'custbody_bpc_related_pet',
+                        value: pet_id
+                });
+
+                const bag_sizes = [20, 10, 5];
+
+                for (let size of bag_sizes) {
+                        const count = food_requirements.bags[size];
+                        const item = itemsByCups[size];
+                        if (count > 0 && item) {
+                                salesOrder.selectNewLine({ sublistId: 'item' });
+                                salesOrder.setCurrentSublistValue({
+                                        sublistId: 'item',
+                                        fieldId: 'item',
+                                        value: item.id
+                                });
+                                salesOrder.setCurrentSublistValue({
+                                        sublistId: 'item',
+                                        fieldId: 'quantity',
+                                        value: count
+                                });
+                                salesOrder.commitLine({ sublistId: 'item' });
+                        }
+                }
+
+                const orderId = salesOrder.save();
+                log.audit('Sales Order Created', { pet_id, customer_id, orderId });
+
         }
 
         return {
