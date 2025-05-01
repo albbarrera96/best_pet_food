@@ -15,7 +15,7 @@ define(['N/search', 'N/record', 'N/log'], function(search, record, log) {
         return search.create({
             type: pet_record_type,
             filters: [
-                ['custrecord_bpc_bf_type', 'anyof', '1', '2'] // Dog = 2, Cat = 1
+                ['custrecord_bpc_bf_type', 'anyof', '1', '2']
             ],
             columns: [
                 'internalid',
@@ -78,7 +78,7 @@ define(['N/search', 'N/record', 'N/log'], function(search, record, log) {
                     type: pet_record_type,
                     id,
                     values: {
-                        [pet_weight_field]: expectedWeight,
+                        [pet_weight_field]: Math.round(expectedWeight),
                         [pet_status_field]: status
                     }
                 });
