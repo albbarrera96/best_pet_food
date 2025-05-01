@@ -10,5 +10,8 @@
       <feature required="false">MAILMERGE</feature>
       <feature required="true">CUSTOMRECORDS</feature>
     </features>
+    <objects>
+      <object>custtab_188_td2986753_138</object>
+    </objects>
   </dependencies>
 </manifest>

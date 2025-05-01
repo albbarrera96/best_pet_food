@@ -7,7 +7,7 @@
   <allowmobileaccess>F</allowmobileaccess>
   <allownumberingoverride>F</allownumberingoverride>
   <allowquickadd>T</allowquickadd>
-  <allowquicksearch>F</allowquicksearch>
+  <allowquicksearch>T</allowquicksearch>
   <allowuiaccess>T</allowuiaccess>
   <description>The Pet Record is a custom record in NetSuite designed to store and manage detailed information about pets enrolled in the Best Pet Food subscription service. Each pet is linked to a customer and is used to determine the appropriate meal plan based on age, breed, and weight. This record also helps automate monthly order processing and pet growth tracking.</description>
   <enabledle>T</enabledle>
@@ -60,14 +60,14 @@
       <help>Stores the owner of the pet.</help>
       <isformula>F</isformula>
       <ismandatory>T</ismandatory>
-      <isparent>F</isparent>
+      <isparent>T</isparent>
       <label>Customer</label>
       <linktext></linktext>
       <maxlength></maxlength>
       <maxvalue></maxvalue>
       <minvalue></minvalue>
       <onparentdelete>SET_NULL</onparentdelete>
-      <parentsubtab></parentsubtab>
+      <parentsubtab>[scriptid=custtab_188_td2986753_138]</parentsubtab>
       <rolerestrict>F</rolerestrict>
       <searchcomparefield></searchcomparefield>
       <searchdefault></searchdefault>
