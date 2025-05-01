@@ -41,6 +41,15 @@ define(['N/search', 'N/record', 'N/log', 'N/format'], function(search, record, l
         const pet_breed_expected_weight_field = 'custrecord_bpc_expected_adult_weight';
         const pet_breed_expected_adult_age_field = 'custrecord_bpc_breed_expected_adult_age';
 
+        // Food Fields
+
+        const food_breed_size_field = 'custitem_bpc_food_breed_size';
+        const food_animal_type_field = 'custitem_bpc_animal';
+        const food_stage_field = 'custitem_bpc_bf_stage';
+        const food_size_in_cups_field = 'custitem_bpc_bf_cups';
+
+
+
         const WELCOME_BOX = 914;
 
         function getInputData() {
@@ -91,6 +100,10 @@ define(['N/search', 'N/record', 'N/log', 'N/format'], function(search, record, l
                         last_order_date,
                         anniversary_date
                 });
+
+                // Get the food item based on the pet type, breed size, and age
+
+
 
 
         }
