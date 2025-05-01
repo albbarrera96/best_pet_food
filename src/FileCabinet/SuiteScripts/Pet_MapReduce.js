@@ -15,18 +15,15 @@ define(['N/search', 'N/record', 'N/log', 'N/format'], function(search, record, l
         const pet_breed_size_field = 'custrecord_bpc_pet_breed_size';
         const pet_breed_expected_weight_field = 'custrecord_bpc_expected_adult_weight';
 
-        const food_breed_size_field = 'custitem_bpc_food_breed_size';
-        const food_animal_type_field = 'custitem_bpc_animal';
-        const food_stage_field = 'custitem_bpc_bf_stage';
-        const food_size_in_cups_field = 'custitem_bpc_bf_cups';
-
         function getInputData() {
                 return search.create({
                         type: pet_record_type,
                         filters: [
+                                /* Comentado temporalmente mientras se prueba el script
                                 ['custrecord_bpc_last_order_date', 'onorbefore', 'daysago30'],
                                 'OR',
                                 ['custrecord_bpc_last_order_date', 'isempty', '']
+                                */
                         ],
                         columns: [
                                 'internalid',
@@ -173,7 +170,6 @@ define(['N/search', 'N/record', 'N/log', 'N/format'], function(search, record, l
 
                 if (!matchingItems.length || !customer_id) return;
 
-                // Log the pet details
                 const cupSizeMap = {
                         5: '1',
                         10: '2',
@@ -210,7 +206,7 @@ define(['N/search', 'N/record', 'N/log', 'N/format'], function(search, record, l
                 });
 
                 salesOrder.setValue({
-                        fieldId: 'custbody_bpc_related_pet',
+                        fieldId: 'custbody_sales_order_pet', // este es el campo correcto que debe establecer el ID de la mascota
                         value: pet_id
                 });
 
@@ -238,8 +234,21 @@ define(['N/search', 'N/record', 'N/log', 'N/format'], function(search, record, l
 
                 const orderId = salesOrder.save();
                 log.audit('Sales Order Created', { pet_id, customer_id, orderId });
-        }
 
+                const today = new Date();
+                const todayFormatted = format.format({
+                        value: today,
+                        type: format.Type.DATE
+                });
+
+                record.submitFields({
+                        type: pet_record_type,
+                        id: pet_id,
+                        values: {
+                                [pet_last_order_date_field]: todayFormatted
+                        }
+                });
+        }
 
         return {
                 getInputData,
