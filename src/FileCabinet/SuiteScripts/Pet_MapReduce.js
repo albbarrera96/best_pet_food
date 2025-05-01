@@ -4,30 +4,6 @@
  */
 define(['N/search', 'N/record', 'N/log', 'N/format'], function(search, record, log, format) {
 
-        /* dog.age_in_months = 0-6; food.breed_size = dog.breed_size && food.stage */
-        /* cat dog.age_in_months = 0-6; food.breed_size = cat.breed_size && food.stage */
-
-        /* dog.age_in_months = 9-24; food.breed_size = dog.breed_size && food.stage */
-        /* cat dog.age_in_months = 12-24; food.breed_size = cat.breed_size && */
-
-        /* dog.age => adult_expected_age; food.stage = adult && food.breed_size = dog.breed_size */
-        /* cat age => adult_expected_age; food.stage = adult && food.breed_size = cat.breed_size */
-
-        /* Pets should get ½ cup/day for every 5 lbs of weight (pet.weight is in kg) */
-
-        /*      ●   All dogs less than adult age should have the weight auto updated monthly
-                ○	At half of their adult age expect the dog to be 75% of their expected adult weight
-                ○	At their adult age expect the dog to be their adult weight
-                ●	All cats less than 2 years should have their weight auto updated monthly
-                ○	Find their adult age, and their adult weight
-                ○	They should be expected to have even growth from birth to their adult age and weight
-         */
-
-        /*
-                ●	All pets with last order dates a month ago or older should have new orders created
-                ●	The pet records which have had orders created should have updated last order dates of today
-        **/
-
         const pet_record_type = 'customrecord_bpc_bf_pet';
         const pet_customer_field = 'custrecord_bpc_bf_pet_cust';
         const pet_name_field = 'name';
@@ -40,14 +16,10 @@ define(['N/search', 'N/record', 'N/log', 'N/format'], function(search, record, l
         const pet_breed_expected_weight_field = 'custrecord_bpc_expected_adult_weight';
         const pet_breed_expected_adult_age_field = 'custrecord_bpc_breed_expected_adult_age';
 
-        // Food Fields
-
         const food_breed_size_field = 'custitem_bpc_food_breed_size';
         const food_animal_type_field = 'custitem_bpc_animal';
         const food_stage_field = 'custitem_bpc_bf_stage';
         const food_size_in_cups_field = 'custitem_bpc_bf_cups';
-
-
 
         const WELCOME_BOX = 914;
 
@@ -74,6 +46,46 @@ define(['N/search', 'N/record', 'N/log', 'N/format'], function(search, record, l
                 });
         }
 
+        function getPetStage(pet_type_text, age_in_months) {
+                if (pet_type_text === 'Dog' && age_in_months <= 24) return 'Kitten/Puppy';
+                if (pet_type_text === 'Dog' && age_in_months > 24) return 'Adult';
+                if (pet_type_text === 'Cat' && age_in_months <= 24) return 'Kitten/Puppy';
+                if (pet_type_text === 'Cat' && age_in_months > 6) return 'Adult';
+                return null;
+        }
+
+        function getFoodBagBreakdown(pet_weight_lbs) {
+                const daily_cups = 0.5 + (0.5 * (pet_weight_lbs / 5));
+                const monthly_cups = Math.ceil(daily_cups * 30);
+
+                const bag_sizes = [20, 10, 5];
+                const bag_counts = { 20: 0, 10: 0, 5: 0 };
+                let remaining_cups = monthly_cups;
+
+                for (let size of bag_sizes) {
+                        if (remaining_cups <= 0) break;
+                        const count = Math.floor(remaining_cups / size);
+                        if (count > 0) {
+                                bag_counts[size] = count;
+                                remaining_cups -= count * size;
+                        }
+                }
+
+                if (remaining_cups > 0) {
+                        for (let size of [...bag_sizes].reverse()) {
+                                if (size >= remaining_cups) {
+                                        bag_counts[size]++;
+                                        break;
+                                }
+                        }
+                }
+
+                return {
+                        monthly_cups,
+                        bags: bag_counts
+                };
+        }
+
         function map(context) {
                 const pet = JSON.parse(context.value);
                 const pet_id = pet.id;
@@ -82,13 +94,16 @@ define(['N/search', 'N/record', 'N/log', 'N/format'], function(search, record, l
                 const pet_weight_kg = parseFloat(pet.values[pet_weight_field]) || 0;
                 const pet_weight_lbs = pet_weight_kg * 2.20462;
                 const pet_age_in_months = parseInt(pet.values[pet_age_in_months_field]) || 0;
-                const breed_size = pet.values[pet_breed_size_field];
-                const pet_type = pet.values[pet_type_field];
+                const breed_size = pet.values[pet_breed_size_field]?.value || null;
+                const pet_type = pet.values[pet_type_field]?.value || null;
+                const pet_type_text = pet.values[pet_type_field]?.text || null;
                 const last_order_date = pet.values[pet_last_order_date_field];
                 const anniversary_date = pet.values[pet_anniversary_date_field];
-                let pet_stage;
 
-                log.debug('Pet Inf Detailed', {
+                const pet_stage = getPetStage(pet_type_text, pet_age_in_months);
+                const food_requirements = getFoodBagBreakdown(pet_weight_lbs);
+
+                log.debug('Pet and Food Requirements', {
                         pet_id,
                         customer_id,
                         pet_name,
@@ -98,22 +113,12 @@ define(['N/search', 'N/record', 'N/log', 'N/format'], function(search, record, l
                         breed_size,
                         pet_type,
                         last_order_date,
-                        anniversary_date
+                        anniversary_date,
+                        pet_stage,
+                        food_requirements
                 });
 
-                // Get the food record
-
-                if (pet_type === 'Dog' && (pet_age_in_months <= 24)) {
-                        pet_stage = 'Kitten/Puppy';
-                } else if (pet_type === 'Dog' && pet_age_in_months > 24) {
-                        pet_stage = 'Adult';
-                } else if (pet_type === 'Cat' && pet_age_in_months <= 24) {
-                        pet_stage = 'Kitten/Puppy';
-                } else if (pet_type === 'Cat' && pet_age_in_months > 6) {
-                        pet_stage = 'Adult';
-                }
-
-                
+                if (!pet_type || !breed_size || !pet_stage) return;
 
                 const food_search = search.create({
                         type: 'inventoryitem',
@@ -122,21 +127,18 @@ define(['N/search', 'N/record', 'N/log', 'N/format'], function(search, record, l
                                 'AND',
                                 ['custitem_bpc_food_breed_size', 'anyof', breed_size],
                                 'AND',
-                                ['custitem_bpc_bf_stage', 'anyof', pet_stage],
-                                'AND',
-                                ['custitem_bpc_bf_cups', 'isnotempty', ]
+                                ['custitem_bpc_bf_stage', 'anyof', pet_stage]
                         ],
                         columns: [
+                                'internalid',
                                 food_breed_size_field,
                                 food_animal_type_field,
                                 food_stage_field,
                                 food_size_in_cups_field
                         ]
                 });
-
-
-
         }
+
         return {
                 getInputData,
                 map
