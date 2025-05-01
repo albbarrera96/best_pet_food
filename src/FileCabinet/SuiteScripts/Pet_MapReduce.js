@@ -13,16 +13,12 @@ define(['N/search', 'N/record', 'N/log', 'N/format'], function(search, record, l
         const pet_anniversary_date_field = 'custrecord_bpc_anniversary_date';
         const pet_age_in_months_field = 'custrecord_bpc_age_in_months';
         const pet_breed_size_field = 'custrecord_bpc_pet_breed_size';
-        const pet_breed_size_index = '';
         const pet_breed_expected_weight_field = 'custrecord_bpc_expected_adult_weight';
-        const pet_breed_expected_adult_age_field = 'custrecord_bpc_breed_expected_adult_age';
 
         const food_breed_size_field = 'custitem_bpc_food_breed_size';
         const food_animal_type_field = 'custitem_bpc_animal';
         const food_stage_field = 'custitem_bpc_bf_stage';
         const food_size_in_cups_field = 'custitem_bpc_bf_cups';
-
-        const WELCOME_BOX = 914;
 
         function getInputData() {
                 return search.create({
@@ -56,7 +52,6 @@ define(['N/search', 'N/record', 'N/log', 'N/format'], function(search, record, l
         }
 
         function getFoodBagBreakdown(pet_weight_lbs, pet_stage) {
-                // Calculate daily cups based on pet stage
                 const daily_cups = pet_stage === 'Kitten/Puppy'
                     ? 0.5 + (0.5 * (pet_weight_lbs / 5))
                     : 0.5 * (pet_weight_lbs / 5);
@@ -91,6 +86,52 @@ define(['N/search', 'N/record', 'N/log', 'N/format'], function(search, record, l
                 };
         }
 
+        function getFoodItems() {
+                const foodSearch = search.create({
+                        type: "inventoryitem",
+                        filters: [
+                                ["type", "anyof", "InvtPart"],
+                                "AND",
+                                ["class", "anyof", "34"],
+                                "AND",
+                                ["custitem_bpc_bf_cups", "anyof", "1", "2", "3"],
+                                "AND",
+                                ["custitem_bpc_food_breed_size", "anyof", "1", "2", "3"],
+                                "AND",
+                                ["custitem_bpc_animal", "anyof", "1", "2"],
+                                "AND",
+                                ["custitem_bpc_bf_stage", "anyof", "1", "2"]
+                        ],
+                        columns: [
+                                "internalid",
+                                "itemid",
+                                "displayname",
+                                "salesdescription",
+                                "type",
+                                "baseprice",
+                                "custitem_bpc_bf_cups",
+                                "custitem_bpc_animal",
+                                "custitem_bpc_bf_stage",
+                                "custitem_bpc_food_breed_size"
+                        ]
+                });
+
+                const results = [];
+                foodSearch.run().each(function(result) {
+                        results.push({
+                                id: result.id,
+                                itemid: result.getValue({ name: 'itemid' }),
+                                cups: result.getValue({ name: 'custitem_bpc_bf_cups' }),
+                                animal: result.getValue({ name: 'custitem_bpc_animal' }),
+                                stage: result.getValue({ name: 'custitem_bpc_bf_stage' }),
+                                breed_size: result.getValue({ name: 'custitem_bpc_food_breed_size' })
+                        });
+                        return true;
+                });
+
+                return results;
+        }
+
         function map(context) {
                 const pet = JSON.parse(context.value);
                 const pet_id = pet.id;
@@ -106,7 +147,7 @@ define(['N/search', 'N/record', 'N/log', 'N/format'], function(search, record, l
                 const anniversary_date = pet.values[pet_anniversary_date_field];
 
                 const pet_stage = getPetStage(pet_type_text, pet_age_in_months);
-                const food_requirements = getFoodBagBreakdown(pet_weight_lbs);
+                const food_requirements = getFoodBagBreakdown(pet_weight_lbs, pet_stage);
 
                 log.debug('Pet Info 1', {
                         pet_id,
@@ -118,7 +159,7 @@ define(['N/search', 'N/record', 'N/log', 'N/format'], function(search, record, l
                         pet_type,
                         pet_stage,
                         food_requirements
-                })
+                });
 
                 const breedSizeMap = {
                         'Small': 1,
@@ -129,10 +170,10 @@ define(['N/search', 'N/record', 'N/log', 'N/format'], function(search, record, l
                 const stageMap = {
                         'Kitten/Puppy': 1,
                         'Adult': 2
-                }
+                };
 
-                const breed_size_id = breedSizeMap[breed_size] || null;
-                const pet_stage_id = stageMap[pet_stage] || null;
+                const breed_size_id = String(breedSizeMap[breed_size]) || null;
+                const pet_stage_id = String(stageMap[pet_stage]) || null;
 
                 if (!pet_type || !breed_size || !pet_stage) return;
 
@@ -148,106 +189,20 @@ define(['N/search', 'N/record', 'N/log', 'N/format'], function(search, record, l
                         pet_stage,
                         pet_stage_id,
                         food_requirements
-                })
-
-                const food_search = search.create({
-                        type: 'inventoryitem',
-                        filters: [
-                                ["type","anyof","InvtPart"],
-                                "AND",
-                                ["class","anyof","34"],
-                                "AND",
-                                ["custitem_bpc_bf_cups","anyof","1","2","3"],
-                                "AND",
-                                ["custitem_bpc_food_breed_size","anyof", breed_size_id],
-                                "AND",
-                                ["custitem_bpc_animal","anyof",""],
-                                "AND",
-                                ["custitem_bpc_bf_stage","anyof", pet_stage_id],
-                        ],
-                        columns: [
-                                'internalid',
-                                food_breed_size_field,
-                                food_animal_type_field,
-                                food_stage_field,
-                                food_size_in_cups_field
-                        ]
                 });
 
-                const bagSizeToItemMap = {};
+                const foodItems = getFoodItems();
 
-                food_search.run().each(function(result) {
-                        const item_id = result.getValue({ name: 'internalid' });
-                        const item_cup_size = parseFloat(result.getValue({ name: food_size_in_cups_field })) || 0;
+                const matchingItems = foodItems.filter(item =>
+                    item.animal === pet_type &&
+                    item.stage === pet_stage_id &&
+                    item.breed_size === breed_size_id
+                );
 
-                        // Guarda el producto que corresponde a cada tamaño de bolsa
-                        if ([5, 10, 20].includes(item_cup_size)) {
-                                bagSizeToItemMap[item_cup_size] = item_id;
-                        }
-
-                        return true;
+                log.debug('Matching Food Items for Pet', {
+                        pet_id,
+                        matchingItems
                 });
-
-                const { bags } = food_requirements;
-
-                const hasBagsToOrder = Object.keys(bags).some(size => bags[size] > 0 && bagSizeToItemMap[size]);
-
-                if (hasBagsToOrder) {
-                        try {
-                                const order = record.create({
-                                        type: record.Type.SALES_ORDER,
-                                        isDynamic: true
-                                });
-
-                                order.setValue({
-                                        fieldId: 'entity',
-                                        value: customer_id
-                                });
-
-                                const daily_cups = (food_requirements.monthly_cups / 30).toFixed(1);
-                                const feeding_instruction = `Feeding Instructions for ${pet_name}: Feed approximately ${daily_cups} cups per day.`;
-
-                                order.selectNewLine({ sublistId: 'item' });
-                                order.setCurrentSublistValue({
-                                        sublistId: 'item',
-                                        fieldId: 'item',
-                                        value: null
-                                });
-                                order.setCurrentSublistValue({
-                                        sublistId: 'item',
-                                        fieldId: 'description',
-                                        value: feeding_instruction
-                                });
-                                order.commitLine({ sublistId: 'item' });
-
-                                for (let size of [20, 10, 5]) {
-                                        const qty = bags[size];
-                                        const item_id = bagSizeToItemMap[size];
-
-                                        if (!qty || !item_id) continue;
-
-                                        order.selectNewLine({ sublistId: 'item' });
-                                        order.setCurrentSublistValue({
-                                                sublistId: 'item',
-                                                fieldId: 'item',
-                                                value: item_id
-                                        });
-                                        order.setCurrentSublistValue({
-                                                sublistId: 'item',
-                                                fieldId: 'quantity',
-                                                value: qty
-                                        });
-                                        order.commitLine({ sublistId: 'item' });
-                                }
-
-                                const order_id = order.save();
-                                log.audit('Orden de venta creada', { order_id, pet_name, customer_id });
-
-                        } catch (e) {
-                                log.error('Error al crear orden de venta', e);
-                        }
-                }
-
         }
 
         return {
