@@ -54,8 +54,12 @@ define(['N/search', 'N/record', 'N/log', 'N/format'], function(search, record, l
                 return null;
         }
 
-        function getFoodBagBreakdown(pet_weight_lbs) {
-                const daily_cups = 0.5 + (0.5 * (pet_weight_lbs / 5));
+        function getFoodBagBreakdown(pet_weight_lbs, pet_stage) {
+                // Calculate daily cups based on pet stage
+                const daily_cups = pet_stage === 'Kitten/Puppy'
+                    ? 0.5 + (0.5 * (pet_weight_lbs / 5))
+                    : 0.5 * (pet_weight_lbs / 5);
+
                 const monthly_cups = Math.ceil(daily_cups * 30);
 
                 const bag_sizes = [20, 10, 5];
