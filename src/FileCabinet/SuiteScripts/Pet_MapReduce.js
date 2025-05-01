@@ -143,23 +143,9 @@ define(['N/search', 'N/record', 'N/log', 'N/format'], function(search, record, l
                 const breed_size = pet.values[pet_breed_size_field] || null;
                 const pet_type = pet.values[pet_type_field]?.value || null;
                 const pet_type_text = pet.values[pet_type_field]?.text || null;
-                const last_order_date = pet.values[pet_last_order_date_field];
-                const anniversary_date = pet.values[pet_anniversary_date_field];
 
                 const pet_stage = getPetStage(pet_type_text, pet_age_in_months);
                 const food_requirements = getFoodBagBreakdown(pet_weight_lbs, pet_stage);
-
-                log.debug('Pet Info 1', {
-                        pet_id,
-                        customer_id,
-                        pet_name,
-                        pet_weight_lbs,
-                        pet_age_in_months,
-                        breed_size,
-                        pet_type,
-                        pet_stage,
-                        food_requirements
-                });
 
                 const breedSizeMap = {
                         'Small': 1,
@@ -177,20 +163,6 @@ define(['N/search', 'N/record', 'N/log', 'N/format'], function(search, record, l
 
                 if (!pet_type || !breed_size || !pet_stage) return;
 
-                log.debug('Pet Info 2', {
-                        pet_id,
-                        customer_id,
-                        pet_name,
-                        pet_weight_lbs,
-                        pet_age_in_months,
-                        breed_size,
-                        breed_size_id,
-                        pet_type,
-                        pet_stage,
-                        pet_stage_id,
-                        food_requirements
-                });
-
                 const foodItems = getFoodItems();
 
                 const matchingItems = foodItems.filter(item =>
@@ -199,25 +171,32 @@ define(['N/search', 'N/record', 'N/log', 'N/format'], function(search, record, l
                     item.breed_size === breed_size_id
                 );
 
-                log.debug('Matching Food Items for Pet', {
-                        pet_id,
-                        matchingItems
-                });
-
                 if (!matchingItems.length || !customer_id) return;
 
-                log.debug('Food Items', {
-                        pet_id,
-                        customer_id,
-                        matchingItems
-                });
+                // Log the pet details
+                const cupSizeMap = {
+                        5: '1',
+                        10: '2',
+                        20: '3'
+                };
 
                 const itemsByCups = {};
                 for (let item of matchingItems) {
-                        const cups = parseInt(item.cups);
-                        if (!itemsByCups[cups]) {
-                                itemsByCups[cups] = item;
+                        if (!itemsByCups[item.cups]) {
+                                itemsByCups[item.cups] = item;
                         }
+                }
+
+                log.debug('itemsByCups', { itemsByCups, food_requirements });
+
+                const hasValidItems = Object.keys(food_requirements.bags).some(size => {
+                        const cupsId = cupSizeMap[size];
+                        return food_requirements.bags[size] > 0 && itemsByCups[cupsId];
+                });
+
+                if (!hasValidItems) {
+                        log.audit('No matching items found for any bag size', { pet_id, customer_id });
+                        return;
                 }
 
                 const salesOrder = record.create({
@@ -239,7 +218,8 @@ define(['N/search', 'N/record', 'N/log', 'N/format'], function(search, record, l
 
                 for (let size of bag_sizes) {
                         const count = food_requirements.bags[size];
-                        const item = itemsByCups[size];
+                        const cupsId = cupSizeMap[size];
+                        const item = itemsByCups[cupsId];
                         if (count > 0 && item) {
                                 salesOrder.selectNewLine({ sublistId: 'item' });
                                 salesOrder.setCurrentSublistValue({
@@ -258,8 +238,8 @@ define(['N/search', 'N/record', 'N/log', 'N/format'], function(search, record, l
 
                 const orderId = salesOrder.save();
                 log.audit('Sales Order Created', { pet_id, customer_id, orderId });
-
         }
+
 
         return {
                 getInputData,
