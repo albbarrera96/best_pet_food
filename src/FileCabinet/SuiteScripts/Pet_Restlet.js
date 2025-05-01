@@ -240,7 +240,7 @@ define(["N/scriptTypes/restlet", "N/search", "N/log", "N/record", "N/format"], f
         const put = (data) => {
                 log.debug('PUT Request Received', JSON.stringify(data));
 
-                const pet_id = data.id;
+                const pet_id = data.parameters?.pet_id;
                 const pet_name = data.name;
                 const pet_type = data.type;
                 const breed_id = data.breed;
@@ -252,7 +252,7 @@ define(["N/scriptTypes/restlet", "N/search", "N/log", "N/record", "N/format"], f
                         return restlet.createResponse({
                                 content: JSON.stringify({
                                         success: false,
-                                        message: 'Pet ID is required for update'
+                                        message: 'Pet ID is required as a parameter for update'
                                 }),
                                 contentType: "application/json",
                         });

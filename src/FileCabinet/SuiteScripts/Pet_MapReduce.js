@@ -92,9 +92,9 @@ define(['N/search', 'N/record', 'N/log', 'N/format'], function(search, record, l
                 const customer_id = pet.values[pet_customer_field]?.value;
                 const pet_name = pet.values[pet_name_field];
                 const pet_weight_kg = parseFloat(pet.values[pet_weight_field]) || 0;
-                const pet_weight_lbs = pet_weight_kg * 2.20462;
+                const pet_weight_lbs = Math.ceil(pet_weight_kg * 2.20462);
                 const pet_age_in_months = parseInt(pet.values[pet_age_in_months_field]) || 0;
-                const breed_size = pet.values[pet_breed_size_field]?.value || null;
+                const breed_size = pet.values[pet_breed_size_field] || null;
                 const pet_type = pet.values[pet_type_field]?.value || null;
                 const pet_type_text = pet.values[pet_type_field]?.text || null;
                 const last_order_date = pet.values[pet_last_order_date_field];
