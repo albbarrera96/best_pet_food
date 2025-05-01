@@ -2,27 +2,22 @@
  * @NApiVersion 2.1
  * @NScriptType MapReduceScript
  */
-define(['N/search', 'N/record', 'N/log'], function(search, record, log) {
+define(['N/search', 'N/record', 'N/log', './bpc_pet_config'], function (search, record, log, config) {
 
-    const pet_record_type = 'customrecord_bpc_bf_pet';
-    const pet_type_field = 'custrecord_bpc_bf_type';
-    const pet_age_field = 'custrecord_bpc_age_in_months';
-    const pet_weight_field = 'custrecord_bpc_current_weight_kg';
-    const pet_expected_weight_field = 'custrecord_bpc_expected_adult_weight';
-    const pet_status_field = 'custrecord_bpc_pet_status';
+    const PET = config.recordTypes.pet;
 
     function getInputData() {
         return search.create({
-            type: pet_record_type,
+            type: PET.id,
             filters: [
-                ['custrecord_bpc_bf_type', 'anyof', '1', '2']
+                [PET.fields.type, 'anyof', '1', '2'] // Cat or Dog
             ],
             columns: [
                 'internalid',
-                pet_type_field,
-                pet_age_field,
-                pet_weight_field,
-                pet_expected_weight_field
+                PET.fields.type,
+                PET.fields.ageInMonths,
+                PET.fields.weightInKg,
+                PET.fields.breedExpectedWeight
             ]
         });
     }
@@ -61,42 +56,35 @@ define(['N/search', 'N/record', 'N/log'], function(search, record, log) {
         const id = pet.id;
         const values = pet.values;
 
-        const petType = values[pet_type_field]?.value;
-        const ageMonths = parseFloat(values[pet_age_field]) || 0;
-        const actualWeight = parseFloat(values[pet_weight_field]) || 0;
-        const expectedAdultWeight = parseFloat(values[pet_expected_weight_field]) || 0;
+        const petType = values[PET.fields.type]?.value;
+        const ageMonths = parseFloat(values[PET.fields.ageInMonths]) || 0;
+        const actualWeight = parseFloat(values[PET.fields.weightInKg]) || 0;
+        const expectedAdultWeight = parseFloat(values[PET.fields.breedExpectedWeight]) || 0;
 
         if (!petType || !expectedAdultWeight) return;
 
         const expectedWeight = calculateExpectedWeight(petType, ageMonths, expectedAdultWeight);
         const status = determineStatus(expectedWeight, actualWeight);
 
-        // Only update if different from actual
-        if (Math.abs(expectedWeight - actualWeight) > 2) {
-            try {
-                record.submitFields({
-                    type: pet_record_type,
-                    id,
-                    values: {
-                        [pet_weight_field]: Math.round(expectedWeight),
-                        [pet_status_field]: status
-                    }
-                });
+        try {
+            const valuesToUpdate = {};
+            valuesToUpdate[PET.fields.status] = status;
 
-                log.audit('Updated Pet Weight', { id, expectedWeight, status });
-            } catch (e) {
-                log.error('Failed to update pet', { id, error: e });
+            if (Math.abs(expectedWeight - actualWeight) > 2) {
+                valuesToUpdate[PET.fields.weightInKg] = Math.round(expectedWeight);
+                log.audit('Updating pet weight and status', { id, expectedWeight, status });
+            } else {
+                log.audit('Updating pet status only', { id, expectedWeight, actualWeight, status });
             }
-        } else {
-            // Just update the status
+
             record.submitFields({
-                type: pet_record_type,
+                type: PET.id,
                 id,
-                values: {
-                    [pet_status_field]: status
-                }
+                values: valuesToUpdate
             });
-            log.audit('Updated Pet Status Only', { id, actualWeight, expectedWeight, status });
+
+        } catch (e) {
+            log.error('Failed to update pet record', { id, error: e });
         }
     }
 

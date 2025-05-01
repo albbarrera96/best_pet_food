@@ -2,24 +2,27 @@
  * @NApiVersion 2.1
  * @NScriptType Restlet
  */
-define(["N/scriptTypes/restlet", "N/search", "N/log", "N/record", "N/format"], function(restlet, search, log, record, format) {
+define(["N/scriptTypes/restlet", "N/search", "N/log", "N/record", "N/format", "./bpc_pet_config"], function(restlet, search, log, record, format, config) {
 
-        const pet_record_type = 'customrecord_bpc_bf_pet';
+        const pet_record_type = config.recordTypes.pet.fields.type;
 
         // Pet Record Fields
-        const pet_name_field = 'name';
-        const pet_type_field = 'custrecord_bpc_bf_type';
-        const pet_breed_field = 'custrecord_bpc_bf_pet_breed';
-        const pet_customer_field = 'custrecord_bpc_bf_pet_cust';
-        const pet_birth_date_field = 'custrecord_bpc_birth_date';
-        const pet_weight_field = 'custrecord_bpc_current_weight_kg';
-        const pet_anniversary_field = 'custrecord_bpc_anniversary_date';
-        const pet_status_field = 'custrecord_bpc_pet_status';
+        const pet_name_field = config.recordTypes.pet.fields.name;
+        const pet_type_field = config.recordTypes.pet.fields.type;
+        const pet_breed_field = config.recordTypes.pet.fields.breed;
+        const pet_customer_field = config.recordTypes.pet.fields.customer;
+        const pet_birth_date_field = config.recordTypes.pet.fields.birthDate;
+        const pet_weight_field = config.recordTypes.pet.fields.weightInKg;
+        const pet_anniversary_field = config.recordTypes.pet.fields.anniversaryDate;
+        const pet_status_field = config.recordTypes.pet.fields.status;
 
         // Customer Record Fields
-        const customer_first_name_field = 'firstname';
-        const customer_last_name_field = 'lastname';
-        const customer_email_field = 'email';
+        const customer_first_name_field = config.recordTypes.customer.fields.firstName;
+        const customer_last_name_field = config.recordTypes.customer.fields.lastName;
+        const customer_email_field = config.recordTypes.customer.fields.email;
+
+        // Constants
+        const WELCOME_BOX = config.recordTypes.item.constants.welcomeBoxId;
 
         const get = (requestData) => {
                 try {
@@ -100,7 +103,6 @@ define(["N/scriptTypes/restlet", "N/search", "N/log", "N/record", "N/format"], f
                 const subsidiary_id = data.customer.subsidiary;
                 let pet_birth_date;
                 let pet_anniversary_date;
-                const WELCOME_BOX = 914;
 
                 try {
                         pet_birth_date = format.parse({
