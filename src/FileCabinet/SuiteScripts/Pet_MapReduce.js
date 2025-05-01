@@ -99,7 +99,7 @@ define(['N/search', 'N/record', 'N/log', 'N/format'], function(search, record, l
                 const pet_weight_kg = parseFloat(pet.values[pet_weight_field]) || 0;
                 const pet_weight_lbs = Math.ceil(pet_weight_kg * 2.20462);
                 const pet_age_in_months = parseInt(pet.values[pet_age_in_months_field]) || 0;
-                const breed_size = pet.values[pet_breed_size_field].value || null;
+                const breed_size = pet.values[pet_breed_size_field] || null;
                 const pet_type = pet.values[pet_type_field]?.value || null;
                 const pet_type_text = pet.values[pet_type_field]?.text || null;
                 const last_order_date = pet.values[pet_last_order_date_field];
@@ -108,9 +108,47 @@ define(['N/search', 'N/record', 'N/log', 'N/format'], function(search, record, l
                 const pet_stage = getPetStage(pet_type_text, pet_age_in_months);
                 const food_requirements = getFoodBagBreakdown(pet_weight_lbs);
 
-                log.debug('Pet and Food Requirements', pet);
+                log.debug('Pet Info 1', {
+                        pet_id,
+                        customer_id,
+                        pet_name,
+                        pet_weight_lbs,
+                        pet_age_in_months,
+                        breed_size,
+                        pet_type,
+                        pet_stage,
+                        food_requirements
+                })
+
+                const breedSizeMap = {
+                        'Small': 1,
+                        'Medium': 2,
+                        'Large': 3
+                };
+
+                const stageMap = {
+                        'Kitten/Puppy': 1,
+                        'Adult': 2
+                }
+
+                const breed_size_id = breedSizeMap[breed_size] || null;
+                const pet_stage_id = stageMap[pet_stage] || null;
 
                 if (!pet_type || !breed_size || !pet_stage) return;
+
+                log.debug('Pet Info 2', {
+                        pet_id,
+                        customer_id,
+                        pet_name,
+                        pet_weight_lbs,
+                        pet_age_in_months,
+                        breed_size,
+                        breed_size_id,
+                        pet_type,
+                        pet_stage,
+                        pet_stage_id,
+                        food_requirements
+                })
 
                 const food_search = search.create({
                         type: 'inventoryitem',
@@ -121,11 +159,11 @@ define(['N/search', 'N/record', 'N/log', 'N/format'], function(search, record, l
                                 "AND",
                                 ["custitem_bpc_bf_cups","anyof","1","2","3"],
                                 "AND",
-                                ["custitem_bpc_food_breed_size","anyof", breed_size],
+                                ["custitem_bpc_food_breed_size","anyof", breed_size_id],
                                 "AND",
                                 ["custitem_bpc_animal","anyof",""],
                                 "AND",
-                                ["custitem_bpc_bf_stage","anyof",""]
+                                ["custitem_bpc_bf_stage","anyof", pet_stage_id],
                         ],
                         columns: [
                                 'internalid',
