@@ -1,0 +1,24 @@
+<customlist scriptid="customlist_breed_size">
+  <description></description>
+  <isinactive>F</isinactive>
+  <ismatrixoption>F</ismatrixoption>
+  <isordered>T</isordered>
+  <name>Breed Size</name>
+  <customvalues>
+    <customvalue scriptid="val_110000_td2986753_828">
+      <abbreviation>S</abbreviation>
+      <isinactive>F</isinactive>
+      <value>Small</value>
+    </customvalue>
+    <customvalue scriptid="val_110001_td2986753_545">
+      <abbreviation>M</abbreviation>
+      <isinactive>F</isinactive>
+      <value>Medium</value>
+    </customvalue>
+    <customvalue scriptid="val_110002_td2986753_738">
+      <abbreviation>L</abbreviation>
+      <isinactive>F</isinactive>
+      <value>Large</value>
+    </customvalue>
+  </customvalues>
+</customlist>

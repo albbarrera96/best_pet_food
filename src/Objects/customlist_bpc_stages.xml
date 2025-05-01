@@ -1,0 +1,24 @@
+<customlist scriptid="customlist_bpc_stages">
+  <description></description>
+  <isinactive>F</isinactive>
+  <ismatrixoption>F</ismatrixoption>
+  <isordered>T</isordered>
+  <name>Stages</name>
+  <customvalues>
+    <customvalue scriptid="val_109989_td2986753_872">
+      <abbreviation>K</abbreviation>
+      <isinactive>F</isinactive>
+      <value>Kitten/Puppy</value>
+    </customvalue>
+    <customvalue scriptid="val_109990_td2986753_508">
+      <abbreviation>A</abbreviation>
+      <isinactive>F</isinactive>
+      <value>Adult</value>
+    </customvalue>
+    <customvalue scriptid="val_109991_td2986753_913">
+      <abbreviation>S</abbreviation>
+      <isinactive>F</isinactive>
+      <value>Senior</value>
+    </customvalue>
+  </customvalues>
+</customlist>

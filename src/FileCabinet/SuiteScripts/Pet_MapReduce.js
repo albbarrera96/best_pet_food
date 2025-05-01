@@ -13,6 +13,7 @@ define(['N/search', 'N/record', 'N/log', 'N/format'], function(search, record, l
         const pet_anniversary_date_field = 'custrecord_bpc_anniversary_date';
         const pet_age_in_months_field = 'custrecord_bpc_age_in_months';
         const pet_breed_size_field = 'custrecord_bpc_pet_breed_size';
+        const pet_breed_size_index = '';
         const pet_breed_expected_weight_field = 'custrecord_bpc_expected_adult_weight';
         const pet_breed_expected_adult_age_field = 'custrecord_bpc_breed_expected_adult_age';
 
@@ -98,7 +99,7 @@ define(['N/search', 'N/record', 'N/log', 'N/format'], function(search, record, l
                 const pet_weight_kg = parseFloat(pet.values[pet_weight_field]) || 0;
                 const pet_weight_lbs = Math.ceil(pet_weight_kg * 2.20462);
                 const pet_age_in_months = parseInt(pet.values[pet_age_in_months_field]) || 0;
-                const breed_size = pet.values[pet_breed_size_field] || null;
+                const breed_size = pet.values[pet_breed_size_field].value || null;
                 const pet_type = pet.values[pet_type_field]?.value || null;
                 const pet_type_text = pet.values[pet_type_field]?.text || null;
                 const last_order_date = pet.values[pet_last_order_date_field];
@@ -107,31 +108,24 @@ define(['N/search', 'N/record', 'N/log', 'N/format'], function(search, record, l
                 const pet_stage = getPetStage(pet_type_text, pet_age_in_months);
                 const food_requirements = getFoodBagBreakdown(pet_weight_lbs);
 
-                log.debug('Pet and Food Requirements', {
-                        pet_id,
-                        customer_id,
-                        pet_name,
-                        pet_weight_kg,
-                        pet_weight_lbs,
-                        pet_age_in_months,
-                        breed_size,
-                        pet_type,
-                        last_order_date,
-                        anniversary_date,
-                        pet_stage,
-                        food_requirements
-                });
+                log.debug('Pet and Food Requirements', pet);
 
                 if (!pet_type || !breed_size || !pet_stage) return;
 
                 const food_search = search.create({
                         type: 'inventoryitem',
                         filters: [
-                                ['custitem_bpc_animal', 'anyof', pet_type],
-                                'AND',
-                                ['custitem_bpc_food_breed_size', 'anyof', breed_size],
-                                'AND',
-                                ['custitem_bpc_bf_stage', 'anyof', pet_stage]
+                                ["type","anyof","InvtPart"],
+                                "AND",
+                                ["class","anyof","34"],
+                                "AND",
+                                ["custitem_bpc_bf_cups","anyof","1","2","3"],
+                                "AND",
+                                ["custitem_bpc_food_breed_size","anyof", breed_size],
+                                "AND",
+                                ["custitem_bpc_animal","anyof",""],
+                                "AND",
+                                ["custitem_bpc_bf_stage","anyof",""]
                         ],
                         columns: [
                                 'internalid',
@@ -141,6 +135,81 @@ define(['N/search', 'N/record', 'N/log', 'N/format'], function(search, record, l
                                 food_size_in_cups_field
                         ]
                 });
+
+                const bagSizeToItemMap = {};
+
+                food_search.run().each(function(result) {
+                        const item_id = result.getValue({ name: 'internalid' });
+                        const item_cup_size = parseFloat(result.getValue({ name: food_size_in_cups_field })) || 0;
+
+                        // Guarda el producto que corresponde a cada tamaño de bolsa
+                        if ([5, 10, 20].includes(item_cup_size)) {
+                                bagSizeToItemMap[item_cup_size] = item_id;
+                        }
+
+                        return true;
+                });
+
+                const { bags } = food_requirements;
+
+                const hasBagsToOrder = Object.keys(bags).some(size => bags[size] > 0 && bagSizeToItemMap[size]);
+
+                if (hasBagsToOrder) {
+                        try {
+                                const order = record.create({
+                                        type: record.Type.SALES_ORDER,
+                                        isDynamic: true
+                                });
+
+                                order.setValue({
+                                        fieldId: 'entity',
+                                        value: customer_id
+                                });
+
+                                const daily_cups = (food_requirements.monthly_cups / 30).toFixed(1);
+                                const feeding_instruction = `Feeding Instructions for ${pet_name}: Feed approximately ${daily_cups} cups per day.`;
+
+                                order.selectNewLine({ sublistId: 'item' });
+                                order.setCurrentSublistValue({
+                                        sublistId: 'item',
+                                        fieldId: 'item',
+                                        value: null
+                                });
+                                order.setCurrentSublistValue({
+                                        sublistId: 'item',
+                                        fieldId: 'description',
+                                        value: feeding_instruction
+                                });
+                                order.commitLine({ sublistId: 'item' });
+
+                                for (let size of [20, 10, 5]) {
+                                        const qty = bags[size];
+                                        const item_id = bagSizeToItemMap[size];
+
+                                        if (!qty || !item_id) continue;
+
+                                        order.selectNewLine({ sublistId: 'item' });
+                                        order.setCurrentSublistValue({
+                                                sublistId: 'item',
+                                                fieldId: 'item',
+                                                value: item_id
+                                        });
+                                        order.setCurrentSublistValue({
+                                                sublistId: 'item',
+                                                fieldId: 'quantity',
+                                                value: qty
+                                        });
+                                        order.commitLine({ sublistId: 'item' });
+                                }
+
+                                const order_id = order.save();
+                                log.audit('Orden de venta creada', { order_id, pet_name, customer_id });
+
+                        } catch (e) {
+                                log.error('Error al crear orden de venta', e);
+                        }
+                }
+
         }
 
         return {
