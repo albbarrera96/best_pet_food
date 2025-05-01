@@ -240,7 +240,7 @@ define(["N/scriptTypes/restlet", "N/search", "N/log", "N/record", "N/format"], f
         const put = (data) => {
                 log.debug('PUT Request Received', JSON.stringify(data));
 
-                const pet_id = data.parameters?.pet_id;
+                const pet_id = data.id;
                 const pet_name = data.name;
                 const pet_type = data.type;
                 const breed_id = data.breed;
@@ -279,26 +279,46 @@ define(["N/scriptTypes/restlet", "N/search", "N/log", "N/record", "N/format"], f
                 }
 
                 try {
-                        const petRecord = record.load({
+                        const pet_record = record.load({
                                 type: pet_record_type,
                                 id: pet_id,
                                 isDynamic: false
                         });
 
-                        petRecord.setValue({ fieldId: pet_type_field, value: pet_type });
-                        petRecord.setValue({ fieldId: pet_breed_field, value: breed_id });
-                        petRecord.setValue({ fieldId: pet_name_field, value: pet_name });
-                        petRecord.setValue({ fieldId: pet_birth_date_field, value: pet_birth_date });
-                        petRecord.setValue({ fieldId: pet_weight_field, value: weight });
-                        petRecord.setValue({ fieldId: pet_anniversary_field, value: pet_anniversary_date });
+                        pet_record.setValue({ fieldId: pet_type_field, value: pet_type });
+                        pet_record.setValue({ fieldId: pet_breed_field, value: breed_id });
+                        pet_record.setValue({ fieldId: pet_name_field, value: pet_name });
+                        pet_record.setValue({ fieldId: pet_birth_date_field, value: pet_birth_date });
+                        pet_record.setValue({ fieldId: pet_weight_field, value: weight });
+                        pet_record.setValue({ fieldId: pet_anniversary_field, value: pet_anniversary_date });
 
-                        const updatedPetId = petRecord.save();
-                        log.audit('Pet Updated', `Pet ID: ${updatedPetId}`);
+                        const updated_pet_id = pet_record.save();
+                        log.audit('Pet Updated', `Pet ID: ${updated_pet_id}`);
+
+                        const updated_pet_record = record.load({
+                                type: pet_record_type,
+                                id: updated_pet_id
+                        });
+
+                        let response_data = {
+                                id: updated_pet_id,
+                                name: updated_pet_record.getValue({ fieldId: pet_name_field }),
+                                type: updated_pet_record.getText({ fieldId: pet_type_field }),
+                                breed: updated_pet_record.getText({ fieldId: pet_breed_field }),
+                                birth_date: updated_pet_record.getText({ fieldId: pet_birth_date_field }),
+                                weight: updated_pet_record.getValue({ fieldId: pet_weight_field }),
+                                anniversary_date: updated_pet_record.getText({ fieldId: pet_anniversary_field })
+                        }
+
+                        JSON.parse(JSON.stringify(response_data));
+
 
                         return restlet.createResponse({
                                 content: JSON.stringify({
                                         success: true,
-                                        pet_id: updatedPetId
+                                        message: `Pet record updated successfully!`,
+                                        pet: response_data
+
                                 }),
                                 contentType: "application/json"
                         });
