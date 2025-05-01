@@ -29,7 +29,6 @@ define(['N/search', 'N/record', 'N/log', 'N/format'], function(search, record, l
         **/
 
         const pet_record_type = 'customrecord_bpc_bf_pet';
-        const sales_order_type = record.Type.SALES_ORDER;
         const pet_customer_field = 'custrecord_bpc_bf_pet_cust';
         const pet_name_field = 'name';
         const pet_weight_field = 'custrecord_bpc_current_weight_kg';
@@ -87,6 +86,7 @@ define(['N/search', 'N/record', 'N/log', 'N/format'], function(search, record, l
                 const pet_type = pet.values[pet_type_field];
                 const last_order_date = pet.values[pet_last_order_date_field];
                 const anniversary_date = pet.values[pet_anniversary_date_field];
+                let pet_stage;
 
                 log.debug('Pet Inf Detailed', {
                         pet_id,
@@ -101,8 +101,38 @@ define(['N/search', 'N/record', 'N/log', 'N/format'], function(search, record, l
                         anniversary_date
                 });
 
-                // Get the food item based on the pet type, breed size, and age
+                // Get the food record
 
+                if (pet_type === 'Dog' && (pet_age_in_months <= 24)) {
+                        pet_stage = 'Kitten/Puppy';
+                } else if (pet_type === 'Dog' && pet_age_in_months > 24) {
+                        pet_stage = 'Adult';
+                } else if (pet_type === 'Cat' && pet_age_in_months <= 24) {
+                        pet_stage = 'Kitten/Puppy';
+                } else if (pet_type === 'Cat' && pet_age_in_months > 6) {
+                        pet_stage = 'Adult';
+                }
+
+                
+
+                const food_search = search.create({
+                        type: 'inventoryitem',
+                        filters: [
+                                ['custitem_bpc_animal', 'anyof', pet_type],
+                                'AND',
+                                ['custitem_bpc_food_breed_size', 'anyof', breed_size],
+                                'AND',
+                                ['custitem_bpc_bf_stage', 'anyof', pet_stage],
+                                'AND',
+                                ['custitem_bpc_bf_cups', 'isnotempty', ]
+                        ],
+                        columns: [
+                                food_breed_size_field,
+                                food_animal_type_field,
+                                food_stage_field,
+                                food_size_in_cups_field
+                        ]
+                });
 
 
 
