@@ -1,0 +1,24 @@
+{
+  "pet": {
+    "name": "Jester",
+    "type": "2",
+    "breed": "38",
+    "birth_date": "06/18/2023",
+    "weight": 56,
+    "anniversary_date": "04/25/2025"
+  },
+  "customer": {
+    "first_name": "Bob",
+    "last_name": "Dylan",
+    "email": "test@email.com",
+    "subsidiary": "1"
+  },
+
+
+  "SampleResponse" : {
+    "success": true,
+    "pet_id": 702,
+    "customer_id": 2717,
+    "sales_order_id": 22851
+  }
+}
